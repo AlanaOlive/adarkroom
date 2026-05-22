@@ -3,6 +3,8 @@
 
     SITE_URL: encodeURIComponent("http://adarkroom.doublespeakgames.com"),
     VERSION: 1.3,
+    SLIDER_WIDTH: 700,
+    ANIMATION_SPEED: 300,
     MAX_STORE: 99999999999999,
     SAVE_DISPLAY: 30 * 1000,
     GAME_OVER: false,
@@ -201,8 +203,7 @@
         .appendTo(menu);
 
       // Register keypress handlers
-      $('body').off('keydown').keydown(Engine.keyDown);
-      $('body').off('keyup').keyup(Engine.keyUp);
+      Engine.registerKeyboardEvents();
 
       // Register swipe handlers
       swipeElement = $('#outerSlider');
@@ -234,9 +235,11 @@
         Ship.init();
       }
 
-      if($SM.get('config.lightsOff', true)){
-        Engine.turnLightsOff();
-      }
+      var lightsOffEnabled = $SM.get('config.lightsOff', true);
+
+        if(lightsOffEnabled){
+          Engine.turnLightsOff();
+        }
 
       if($SM.get('config.hyperMode', true)){
         Engine.triggerHyperMode();
@@ -262,7 +265,10 @@
       document.removeEventListener('click', Engine.resumeAudioContext);
     },
     browserValid: function() {
-      return ( location.search.indexOf( 'ignorebrowser=true' ) >= 0 || ( typeof Storage != 'undefined' && !oldIE ) );
+      var ignoreBrowser = location.search.indexOf('ignorebrowser=true') >= 0;
+      var hasStorage = typeof Storage != 'undefined';
+
+        return ignoreBrowser || (hasStorage && !oldIE);
     },
 
     isMobile: function() {
@@ -611,11 +617,18 @@
       var stores = $('#storesContainer');
       var panelIndex = $('.location').index(module.panel);
       var diff = Math.abs(panelIndex - currentIndex);
-      slider.animate({left: -(panelIndex * 700) + 'px'}, 300 * diff);
+      
+      slider.animate(
+        {left: -(panelIndex * Engine.SLIDER_WIDTH) + 'px'},
+        Engine.ANIMATION_SPEED * diff
+      );
 
       if($SM.get('stores.wood') !== undefined) {
         // FIXME Why does this work if there's an animation queue...?
-        stores.animate({right: -(panelIndex * 700) + 'px'}, 300 * diff);
+        stores.animate(
+          {right: -(panelIndex * Engine.SLIDER_WIDTH) + 'px'},
+          Engine.ANIMATION_SPEED * diff
+        );
       }
 
       if(Engine.activeModule == Room || Engine.activeModule == Path || Engine.activeModule == Fabricator) {
@@ -674,6 +687,11 @@
       slider.width((slider.children().length * 700) + 'px');
     },
 
+    registerKeyboardEvents: function() {
+      $('body').off('keydown').keydown(Engine.keyDown);
+      $('body').off('keyup').keyup(Engine.keyUp);
+    },
+
     updateOuterSlider: function() {
       var slider = $('#outerSlider');
       slider.width((slider.children().length * 700) + 'px');
@@ -692,7 +710,7 @@
       e = e || window.event;
       if(!Engine.keyPressed && !Engine.keyLock) {
         Engine.pressed = true;
-        if(Engine.activeModule.keyDown) {
+        if(Engine.activeModule && Engine.activeModule.keyDown){
           Engine.activeModule.keyDown(e);
         }
       }
@@ -701,7 +719,7 @@
 
     keyUp: function(e) {
       Engine.pressed = false;
-      if(Engine.activeModule.keyUp) {
+      if(Engine.activeModule && Engine.activeModule.keyUp) {
         Engine.activeModule.keyUp(e);
       } else {
         switch(e.which) {
@@ -820,6 +838,7 @@
       if (enabled == null) {
         enabled = !$SM.get('config.soundOn');
       }
+    
       if (!enabled) {
         $('.volume').text(_('sound on.'));
         $SM.set('config.soundOn', false);
