@@ -1,0 +1,112 @@
+/* =============================================
+   VARIÁVEIS / TOKENS
+   ============================================= */
+:root {
+  --adr-bg:          #000;
+  --adr-text:        #d4c9a8;   /* mais quente e legível que branco puro */
+  --adr-text-dim:    #8a7f66;
+  --adr-accent:      #c8b97a;
+  --adr-btn-bg:      #1a1a1a;
+  --adr-btn-border:  #555;
+  --adr-btn-hover:   #2a2a2a;
+  --adr-btn-active:  #111;
+  --adr-progress-bg: #1f1f1f;
+  --adr-progress-fg: #7a6a3a;
+  --adr-font-size:   15px;
+  --adr-btn-min-h:   44px;      /* tamanho mínimo recomendado para toque */
+  --adr-btn-min-w:   120px;
+  --adr-transition:  0.15s ease;
+}
+
+/* =============================================
+   c. CONTRASTE E TAMANHO DOS TEXTOS
+   ============================================= */
+body {
+  font-size: var(--adr-font-size) !important;
+  color: var(--adr-text) !important;
+  background-color: var(--adr-bg) !important;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Textos de notificação/log — mais legíveis */
+#notifications > div,
+#log > div,
+.notification,
+.event-text,
+.room-content,
+#stores-container,
+#income-container,
+#character-container {
+  color: var(--adr-text) !important;
+  font-size: var(--adr-font-size) !important;
+  line-height: 1.6 !important;
+}
+
+/* Títulos de módulo */
+.module > .header,
+h1, h2, h3 {
+  color: var(--adr-accent) !important;
+  letter-spacing: 0.08em;
+  font-size: calc(var(--adr-font-size) + 1px) !important;
+}
+
+/* Textos secundários */
+.label,
+.stores-title,
+.stores-num,
+.room-title {
+  color: var(--adr-text-dim) !important;
+}
+
+/* =============================================
+   d. AJUSTES GERAIS DE INTERFACE
+   ============================================= */
+
+/* Reduz scroll horizontal acidental */
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Painéis laterais — pequena separação visual */
+.module {
+  border-left: 1px solid #1e1e1e;
+  padding-left: 6px;
+}
+
+/* Espaçamento entre itens de lista de recursos */
+.stores-row,
+.income-row {
+  padding: 2px 0 !important;
+}
+/* =============================================
+   b. INDICADOR DE PROGRESSO EM AÇÕES
+   (estilo para cooldown bars já existentes no ADR + novas)
+   ============================================= */
+
+/* O ADR já usa .cooldown como inner bar — melhoramos a aparência */
+.progress-container,
+.cooldown-container {
+  width: 100%;
+  height: 6px;
+  background: var(--adr-progress-bg) !important;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.cooldown,
+.progress-bar {
+  height: 6px !important;
+  background: linear-gradient(90deg, var(--adr-progress-fg), var(--adr-accent)) !important;
+  border-radius: 3px !important;
+  transition: width 0.3s linear !important;
+}
+
+/* Wrapper dos botões de ação com cooldown */
+.action-count,
+.stores-count {
+  font-size: 12px !important;
+  color: var(--adr-text-dim) !important;
+}
