@@ -273,17 +273,7 @@
       return (location.search.indexOf('ignorebrowser=true') < 0 && /Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent));
     },
 
-    startAutoSave: function () {
-
-      Engine._autoSaveInterval = setInterval(function () {
-
-        Engine.saveGame();
-
-        Engine.log('Auto save executed.');
-
-      }, 30000);
-
-    },
+    
 
     saveGame: function () {
       if (typeof Storage === 'undefined' || !localStorage) {
