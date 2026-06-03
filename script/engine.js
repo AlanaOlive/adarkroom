@@ -3,8 +3,11 @@
 
     SITE_URL: encodeURIComponent("http://adarkroom.doublespeakgames.com"),
     VERSION: 1.3,
+    /* const CURRENT_VERSION = 1.3;*/
     MAX_STORE: 99999999999999,
+    /*const STORE_ITEM_LIMIT = 99999999999999; */
     SAVE_DISPLAY: 30 * 1000,
+    /* const SAVE_DISPLAY_INTERVAL_MS = 30 * 1000;*/
     GAME_OVER: false,
 
     //object event types

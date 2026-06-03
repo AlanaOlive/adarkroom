@@ -105,3 +105,46 @@ button,
   position: relative !important;
   overflow: hidden !important;
 }
+
+/* BOTÕES DE TRABALHADORES */
+
+.workerRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0;
+}
+
+.workerLabel {
+  flex: 1;
+  font-size: 14px;
+}
+
+.workerCount {
+  min-width: 20px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.workerBtn {
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  background-color: #333;
+  color: #ccc;
+  border: 1px solid #555;
+  border-radius: 3px;
+  padding: 0;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.workerBtn:hover {
+  background-color: #555;
+  color: #fff;
+}
+
+.workerBtn:active {
+  background-color: #777;
+}

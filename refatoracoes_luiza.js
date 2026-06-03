@@ -34,19 +34,43 @@
     });
   }
 
-  /* SOM AMBIENTE — toque de fogo a cada ~30s se estiver na sala */
+/* BOTÕES DE TRABALHADORES — substitui setas pequenas por botões − e + */
 
-  function startAmbientSound() {
-    function maybeFire() {
-      // Só toca se o painel da sala/quarto estiver visível
-      var roomVisible = document.querySelector('#room-panel:not([style*="display: none"])') ||
-                        document.querySelector('.room-module');
-      if (roomVisible) {
-        AudioFX.ambientFire();
-      }
-      // Intervalo aleatório entre 20s e 40s
-      setTimeout(maybeFire, 20000 + Math.random() * 20000);
-    }
-    // Começa após 5s para não atrapalhar o carregamento
-    setTimeout(maybeFire, 5000);
-  }
+(function melhorarBotoesVillage() {
+
+  // Aguarda o módulo Outside estar pronto
+  var _intervalo = setInterval(function () {
+    if (typeof Outside === 'undefined') return;
+    clearInterval(_intervalo);
+
+    // Sobrescreve a função que renderiza cada linha de trabalhador
+    var _originalMakeWorkerRow = Outside.makeWorkerRow;
+
+    Outside.makeWorkerRow = function (name, num) {
+      var row = $('<div>').addClass('workerRow');
+
+      $('<div>').addClass('workerLabel').text(name).appendTo(row);
+
+      var contador = $('<div>').addClass('workerCount').text(num);
+
+      var btnMenos = $('<button>')
+        .addClass('workerBtn workerBtn-menos')
+        .text('−')
+        .click(function () {
+          Outside.removeWorker(name);
+        });
+
+      var btnMais = $('<button>')
+        .addClass('workerBtn workerBtn-mais')
+        .text('+')
+        .click(function () {
+          Outside.addWorker(name);
+        });
+
+      row.append(btnMenos).append(contador).append(btnMais);
+      return row;
+    };
+
+  }, 200);
+
+})();
