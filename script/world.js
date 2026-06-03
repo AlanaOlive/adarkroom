@@ -455,35 +455,58 @@ var World = {
 
   checkDanger: function() {
     World.danger = typeof World.danger == 'undefined' ? false: World.danger;
-    if(!World.danger) {
-      if($SM.get('stores["i armour"]', true) === 0 && World.getDistance() >= 8) {
-        World.danger = true;
-        return true;
-      }
-      if($SM.get('stores["s armour"]', true) === 0 && World.getDistance() >= 18) {
-        World.danger = true;
-        return true;
-      }
-    } else {
-      if(World.getDistance() < 8) {
-        World.danger = false;
-        return true;
-      }
-      if(World.getDistance() < 18 && $SM.get('stores["i armour"]', true) > 0) {
-        World.danger = false;
-        return true;
-      }
+    if(!World.danger && World.shouldEnterDanger()) {
+      World.danger = true;
+      return true;
+    }
+    if(World.danger && World.shouldLeaveDanger()) {
+      World.danger = false;
+      return true;
     }
     return false;
+  },
+
+  shouldEnterDanger: function() {
+    if(World.getDistance() >= 8 && World.hasArmor('i armour') === false) {
+      return true;
+    }
+    if(World.getDistance() >= 18 && World.hasArmor('s armour') === false) {
+      return true;
+    }
+    return false;
+  },
+
+  shouldLeaveDanger: function() {
+    if(World.getDistance() < 8) {
+      return true;
+    }
+    if(World.getDistance() < 18 && World.hasArmor('i armour')) {
+      return true;
+    }
+    return false;
+  },
+
+  hasArmor: function(item) {
+    return $SM.get('stores["' + item + '"]', true) > 0;
+  },
+
+  getMovesPerFood: function() {
+    var movesPerFood = World.MOVES_PER_FOOD;
+    movesPerFood *= $SM.hasPerk('slow metabolism') ? 2 : 1;
+    return movesPerFood;
+  },
+
+  getMovesPerWater: function() {
+    var movesPerWater = World.MOVES_PER_WATER;
+    movesPerWater *= $SM.hasPerk('desert rat') ? 2 : 1;
+    return movesPerWater;
   },
 
   useSupplies: function() {
     World.foodMove++;
     World.waterMove++;
     // Food
-    var movesPerFood = World.MOVES_PER_FOOD;
-    movesPerFood *= $SM.hasPerk('slow metabolism') ? 2 : 1;
-    if(World.foodMove >= movesPerFood) {
+    if(World.foodMove >= World.getMovesPerFood()) {
       World.foodMove = 0;
       var num = Path.outfit['cured meat'];
       num--;
@@ -511,9 +534,7 @@ var World = {
       Path.outfit['cured meat'] = num;
     }
     // Water
-    var movesPerWater = World.MOVES_PER_WATER;
-    movesPerWater *= $SM.hasPerk('desert rat') ? 2 : 1;
-    if(World.waterMove >= movesPerWater) {
+    if(World.waterMove >= World.getMovesPerWater()) {
       World.waterMove = 0;
       var water = World.water;
       water--;

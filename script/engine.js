@@ -114,7 +114,82 @@
       }
 
       $('<div>').attr('id', 'locationSlider').appendTo('#main');
+      Engine.createMenu();
 
+      // Register keypress handlers
+      $('body').off('keydown').keydown(Engine.keyDown);
+      $('body').off('keyup').keyup(Engine.keyUp);
+
+      // Register swipe handlers
+      swipeElement = $('#outerSlider');
+      swipeElement.on('swipeleft', Engine.swipeLeft);
+      swipeElement.on('swiperight', Engine.swipeRight);
+      swipeElement.on('swipeup', Engine.swipeUp);
+      swipeElement.on('swipedown', Engine.swipeDown);
+
+      // subscribe to stateUpdates
+      $.Dispatch('stateUpdate').subscribe(Engine.handleStateUpdates);
+
+      $SM.init();
+      AudioEngine.init();
+      Notifications.init();
+      Events.init();
+      Room.init();
+
+
+      if (typeof $SM.get('stores.wood') != 'undefined') {
+        Outside.init();
+      }
+      if ($SM.get('stores.compass', true) > 0) {
+        Path.init();
+      }
+      if ($SM.get('features.location.fabricator')) {
+        Fabricator.init();
+      }
+      if ($SM.get('features.location.spaceShip')) {
+        Ship.init();
+      }
+
+      if ($SM.get('config.lightsOff', true)) {
+        Engine.turnLightsOff();
+      }
+
+      if ($SM.get('config.hyperMode', true)) {
+        Engine.triggerHyperMode();
+      }
+
+      Engine.toggleVolume(Boolean($SM.get('config.soundOn')));
+      if (!AudioEngine.isAudioContextRunning()) {
+        document.addEventListener('click', Engine.resumeAudioContext, true);
+      }
+
+      Engine.saveLanguage();
+
+      Engine.startAutoSave();
+      Engine.createRestartButton();
+
+      Engine.travelTo(Room);
+
+      setTimeout(notifyAboutSound, 3000);
+
+    },
+    resumeAudioContext: function () {
+      AudioEngine.tryResumingAudioContext();
+
+      // turn on music!
+      AudioEngine.setMasterVolume($SM.get('config.soundOn') ? 1.0 : 0.0, 0);
+
+      document.removeEventListener('click', Engine.resumeAudioContext);
+    },
+    browserValid: function () {
+      return (location.search.indexOf('ignorebrowser=true') >= 0 || (typeof Storage != 'undefined' && !oldIE));
+    },
+
+    isMobile: function () {
+      return (location.search.indexOf('ignorebrowser=true') < 0 && /Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent));
+    },
+
+    createMenu: function () {
       var menu = $('<div>')
         .addClass('menu')
         .appendTo('body');
@@ -199,84 +274,12 @@
         .text(_('github.'))
         .click(function () { window.open('https://github.com/doublespeakgames/adarkroom'); })
         .appendTo(menu);
-
-      // Register keypress handlers
-      $('body').off('keydown').keydown(Engine.keyDown);
-      $('body').off('keyup').keyup(Engine.keyUp);
-
-      // Register swipe handlers
-      swipeElement = $('#outerSlider');
-      swipeElement.on('swipeleft', Engine.swipeLeft);
-      swipeElement.on('swiperight', Engine.swipeRight);
-      swipeElement.on('swipeup', Engine.swipeUp);
-      swipeElement.on('swipedown', Engine.swipeDown);
-
-      // subscribe to stateUpdates
-      $.Dispatch('stateUpdate').subscribe(Engine.handleStateUpdates);
-
-      $SM.init();
-      AudioEngine.init();
-      Notifications.init();
-      Events.init();
-      Room.init();
-
-
-      if (typeof $SM.get('stores.wood') != 'undefined') {
-        Outside.init();
-      }
-      if ($SM.get('stores.compass', true) > 0) {
-        Path.init();
-      }
-      if ($SM.get('features.location.fabricator')) {
-        Fabricator.init();
-      }
-      if ($SM.get('features.location.spaceShip')) {
-        Ship.init();
-      }
-
-      if ($SM.get('config.lightsOff', true)) {
-        Engine.turnLightsOff();
-      }
-
-      if ($SM.get('config.hyperMode', true)) {
-        Engine.triggerHyperMode();
-      }
-
-      Engine.toggleVolume(Boolean($SM.get('config.soundOn')));
-      if (!AudioEngine.isAudioContextRunning()) {
-        document.addEventListener('click', Engine.resumeAudioContext, true);
-      }
-
-      Engine.saveLanguage();
-
-      Engine.startAutoSave();
-      Engine.createRestartButton();
-
-      Engine.travelTo(Room);
-
-      setTimeout(notifyAboutSound, 3000);
-
-    },
-    resumeAudioContext: function () {
-      AudioEngine.tryResumingAudioContext();
-
-      // turn on music!
-      AudioEngine.setMasterVolume($SM.get('config.soundOn') ? 1.0 : 0.0, 0);
-
-      document.removeEventListener('click', Engine.resumeAudioContext);
-    },
-    browserValid: function () {
-      return (location.search.indexOf('ignorebrowser=true') >= 0 || (typeof Storage != 'undefined' && !oldIE));
-    },
-
-    isMobile: function () {
-      return (location.search.indexOf('ignorebrowser=true') < 0 && /Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent));
     },
 
     
 
     saveGame: function () {
-      if (typeof Storage === 'undefined' || !localStorage) {
+      if (!Engine.hasPersistentStorage()) {
         return;
       }
 
@@ -300,6 +303,10 @@
       }
     },
 
+    hasPersistentStorage: function () {
+      return typeof Storage !== 'undefined' && !!localStorage;
+    },
+
     startAutoSave: function () {
       if (Engine._autoSaveInterval) {
         clearInterval(Engine._autoSaveInterval);
@@ -311,7 +318,7 @@
     },
 
     addActionHistory: function (action) {
-      if (typeof Storage === 'undefined' || !localStorage) {
+      if (!Engine.hasPersistentStorage()) {
         return;
       }
 
