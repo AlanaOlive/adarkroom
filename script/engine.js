@@ -3,7 +3,8 @@
 
     SITE_URL: encodeURIComponent("http://adarkroom.doublespeakgames.com"),
     VERSION: 1.3,
-    /* const CURRENT_VERSION = 1.3;*/
+    SLIDER_WIDTH: 700,
+    ANIMATION_SPEED: 300,
     MAX_STORE: 99999999999999,
     /*const STORE_ITEM_LIMIT = 99999999999999; */
     SAVE_DISPLAY: 30 * 1000,
@@ -279,7 +280,15 @@
         .appendTo(menu);
     },
 
-    
+      // Register keypress handlers
+      Engine.registerKeyboardEvents();
+
+      // Register swipe handlers
+      swipeElement = $('#outerSlider');
+      swipeElement.on('swipeleft', Engine.swipeLeft);
+      swipeElement.on('swiperight', Engine.swipeRight);
+      swipeElement.on('swipeup', Engine.swipeUp);
+      swipeElement.on('swipedown', Engine.swipeDown);
 
     saveGame: function () {
       if (!Engine.hasPersistentStorage()) {
@@ -306,9 +315,11 @@
       }
     },
 
-    hasPersistentStorage: function () {
-      return typeof Storage !== 'undefined' && !!localStorage;
-    },
+      var lightsOffEnabled = $SM.get('config.lightsOff', true);
+
+        if(lightsOffEnabled){
+          Engine.turnLightsOff();
+        }
 
     startAutoSave: function () {
       if (Engine._autoSaveInterval) {
@@ -332,14 +343,14 @@
           history = JSON.parse(localStorage.actionHistory);
         }
 
-        history.push({
-          action: action,
-          date: new Date().toLocaleString()
-        });
+      document.removeEventListener('click', Engine.resumeAudioContext);
+    },
+    browserValid: function() {
+      var ignoreBrowser = location.search.indexOf('ignorebrowser=true') >= 0;
+      var hasStorage = typeof Storage != 'undefined';
 
-        if (history.length > 10) {
-          history.shift();
-        }
+        return ignoreBrowser || (hasStorage && !oldIE);
+    },
 
         localStorage.actionHistory = JSON.stringify(history);
       } catch (error) {
@@ -698,11 +709,18 @@
       var stores = $('#storesContainer');
       var panelIndex = $('.location').index(module.panel);
       var diff = Math.abs(panelIndex - currentIndex);
-      slider.animate({ left: -(panelIndex * 700) + 'px' }, 300 * diff);
+      
+      slider.animate(
+        {left: -(panelIndex * Engine.SLIDER_WIDTH) + 'px'},
+        Engine.ANIMATION_SPEED * diff
+      );
 
       if ($SM.get('stores.wood') !== undefined) {
         // FIXME Why does this work if there's an animation queue...?
-        stores.animate({ right: -(panelIndex * 700) + 'px' }, 300 * diff);
+        stores.animate(
+          {right: -(panelIndex * Engine.SLIDER_WIDTH) + 'px'},
+          Engine.ANIMATION_SPEED * diff
+        );
       }
 
       if (Engine.activeModule == Room || Engine.activeModule == Path || Engine.activeModule == Fabricator) {
@@ -761,7 +779,12 @@
       slider.width((slider.children().length * 700) + 'px');
     },
 
-    updateOuterSlider: function () {
+    registerKeyboardEvents: function() {
+      $('body').off('keydown').keydown(Engine.keyDown);
+      $('body').off('keyup').keyup(Engine.keyUp);
+    },
+
+    updateOuterSlider: function() {
       var slider = $('#outerSlider');
       slider.width((slider.children().length * 700) + 'px');
     },
@@ -779,7 +802,7 @@
       e = e || window.event;
       if (!Engine.keyPressed && !Engine.keyLock) {
         Engine.pressed = true;
-        if (Engine.activeModule.keyDown) {
+        if(Engine.activeModule && Engine.activeModule.keyDown){
           Engine.activeModule.keyDown(e);
         }
       }
@@ -788,7 +811,7 @@
 
     keyUp: function (e) {
       Engine.pressed = false;
-      if (Engine.activeModule.keyUp) {
+      if(Engine.activeModule && Engine.activeModule.keyUp) {
         Engine.activeModule.keyUp(e);
       } else {
         switch (e.which) {
@@ -907,6 +930,7 @@
       if (enabled == null) {
         enabled = !$SM.get('config.soundOn');
       }
+    
       if (!enabled) {
         $('.volume').text(_('sound on.'));
         $SM.set('config.soundOn', false);
