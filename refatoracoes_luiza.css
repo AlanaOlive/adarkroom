@@ -106,3 +106,47 @@ button,
   overflow: hidden !important;
 }
 
+/* FONTE VT323 — aplicada globalmente com tamanho aumentado */
+
+body,
+body *,
+input,
+button,
+select,
+textarea {
+  font-family: 'VT323', monospace !important;
+  font-size: 16px !important;
+}
+
+/* Ajustes específicos por elemento */
+
+#header .tab {
+  font-size: 17px !important;
+}
+
+.button,
+#gatherButton,
+#trapsButton,
+button {
+  font-size: 16px !important;
+}
+
+.notification,
+#notifications p {
+  font-size: 15px !important;
+}
+
+.tooltip,
+.tooltip * {
+  font-size: 14px !important;
+}
+
+.workerRow,
+.workerRow * {
+  font-size: 16px !important;
+}
+
+/* A VT323 tem line-height generoso, ajustando para não ficar espaçada demais */
+body {
+  line-height: 1.3 !important;
+}
