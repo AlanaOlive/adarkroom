@@ -34,43 +34,45 @@
     });
   }
 
-/* BOTÕES DE TRABALHADORES — substitui setas pequenas por botões − e + */
+/* BOTÕES DE TRABALHADORES — substitui setas já renderizadas no DOM por botões + e − */
 
-(function melhorarBotoesVillage() {
+function aplicarBotoesWorker() {
+  $('#workers .workerRow').each(function () {
+    var row = $(this);
 
-  // Aguarda o módulo Outside estar pronto
-  var _intervalo = setInterval(function () {
-    if (typeof Outside === 'undefined') return;
-    clearInterval(_intervalo);
+    // Evita aplicar duas vezes
+    if (row.find('.workerBtnCustom').length > 0) return;
 
-    // Sobrescreve a função que renderiza cada linha de trabalhador
-    var _originalMakeWorkerRow = Outside.makeWorkerRow;
+    var val = row.find('.row_val');
 
-    Outside.makeWorkerRow = function (name, num) {
-      var row = $('<div>').addClass('workerRow');
+    // Remove as setas originais
+    val.find('.upBtn, .dnBtn, .upManyBtn, .dnManyBtn').remove();
 
-      $('<div>').addClass('workerLabel').text(name).appendTo(row);
+    // Adiciona botões + e −
+    $('<button>')
+      .addClass('upBtn workerBtnCustom')
+      .text('+')
+      .click([1], Outside.increaseWorker)
+      .appendTo(val);
 
-      var contador = $('<div>').addClass('workerCount').text(num);
+    $('<button>')
+      .addClass('dnBtn workerBtnCustom')
+      .text('−')
+      .click([1], Outside.decreaseWorker)
+      .appendTo(val);
+  });
+}
 
-      var btnMenos = $('<button>')
-        .addClass('workerBtn workerBtn-menos')
-        .text('−')
-        .click(function () {
-          Outside.removeWorker(name);
-        });
+// Executa quando o painel Outside já existe no DOM
+var _workerInterval = setInterval(function () {
+  if ($('#workers').length > 0) {
+    aplicarBotoesWorker();
+  }
+}, 500);
 
-      var btnMais = $('<button>')
-        .addClass('workerBtn workerBtn-mais')
-        .text('+')
-        .click(function () {
-          Outside.addWorker(name);
-        });
-
-      row.append(btnMenos).append(contador).append(btnMais);
-      return row;
-    };
-
-  }, 200);
-
-})();
+// Também reaplicar quando os workers forem atualizados
+var _originalUpdateWorkers = Outside.updateWorkersView;
+Outside.updateWorkersView = function () {
+  _originalUpdateWorkers.call(this);
+  setTimeout(aplicarBotoesWorker, 50);
+};
