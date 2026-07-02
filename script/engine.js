@@ -8,7 +8,10 @@
     /*const STORE_ITEM_LIMIT = 99999999999999; */
     SAVE_DISPLAY: 30 * 1000,
     /* const SAVE_DISPLAY_INTERVAL_MS = 30 * 1000;*/
+    AUTO_SAVE_INTERVAL: 30 * 1000,
+    ACTION_HISTORY_LIMIT: 10,
     GAME_OVER: false,
+    _stateDirty: false,
 
     //object event types
     topics: {},
@@ -169,7 +172,7 @@
       Engine.saveLanguage();
 
       Engine.startAutoSave();
-      Engine.createRestartButton();
+      Engine.createSaveStatus();
 
       Engine.travelTo(Room);
 
@@ -281,24 +284,39 @@
 
 
 
-    saveGame: function () {
+    saveGame: function (options) {
+      options = options || {};
+
       if (!Engine.hasPersistentStorage()) {
-        return;
+        return false;
+      }
+
+      if (!options.force && !Engine._stateDirty && localStorage.gameState) {
+        return false;
       }
 
       try {
-        Engine.showSaveNotification();
         localStorage.gameState = JSON.stringify(State);
         localStorage.lastSaveTime = Date.now();
-        Engine.addActionHistory('Jogo salvo automaticamente.');
+        Engine._stateDirty = false;
+        Engine.showSaveNotification();
+        Engine.updateSaveStatus();
+
+        if (options.historyMessage) {
+          Engine.addActionHistory(options.historyMessage);
+        }
+
+        return true;
       } catch (error) {
         Engine.log('Erro ao salvar o jogo: ' + error.message);
+        return false;
       }
     },
 
     showSaveNotification: function () {
       if (typeof Engine._lastNotify === 'undefined' || Date.now() - Engine._lastNotify > Engine.SAVE_DISPLAY) {
         $('#saveNotify')
+          .text(_('saved.'))
           .css('opacity', 1)
           .animate({ opacity: 0 }, 1000, 'linear');
 
@@ -307,7 +325,11 @@
     },
 
     hasPersistentStorage: function () {
-      return typeof Storage !== 'undefined' && !!localStorage;
+      try {
+        return typeof Storage !== 'undefined' && !!window.localStorage;
+      } catch (error) {
+        return false;
+      }
     },
 
     startAutoSave: function () {
@@ -316,28 +338,81 @@
       }
 
       Engine._autoSaveInterval = setInterval(function () {
-        Engine.saveGame();
-      }, 30000);
+        Engine.saveGame({ historyMessage: 'Progresso salvo automaticamente.' });
+      }, Engine.AUTO_SAVE_INTERVAL);
     },
 
-    addActionHistory: function (action) {
-      if (!Engine.hasPersistentStorage()) {
+    createSaveStatus: function () {
+      if ($('#saveStatusBtn').length > 0) {
         return;
       }
 
-      var history = [];
+      $('<span>')
+        .attr('id', 'saveStatusBtn')
+        .addClass('menuBtn')
+        .text(_('último save: --'))
+        .attr('title', 'Clique para ver o histórico de ações')
+        .click(Engine.showActionHistory)
+        .appendTo($('.menu'));
+
+      Engine.updateSaveStatus();
+    },
+
+    updateSaveStatus: function () {
+      var text = 'último save: --';
+
+      if (Engine.hasPersistentStorage() && localStorage.lastSaveTime) {
+        text = 'último save: ' + new Date(parseInt(localStorage.lastSaveTime, 10)).toLocaleTimeString();
+      }
+
+      $('#saveStatusBtn').text(_(text));
+    },
+
+    showActionHistory: function () {
+      var history = Engine.getActionHistory();
+
+      if (history.length === 0) {
+        alert('Nenhuma ação registrada ainda.');
+        return;
+      }
+
+      alert(history.map(function (item) {
+        return item.date + ' - ' + item.action;
+      }).join('\n'));
+    },
+
+    getActionHistory: function () {
+      if (!Engine.hasPersistentStorage() || !localStorage.actionHistory) {
+        return [];
+      }
 
       try {
-        if (localStorage.actionHistory) {
-          history = JSON.parse(localStorage.actionHistory);
-        }
+        return JSON.parse(localStorage.actionHistory);
+      } catch (error) {
+        Engine.log('Erro ao carregar histórico: ' + error.message);
+        return [];
+      }
+    },
 
+    addActionHistory: function (action) {
+      if (!Engine.hasPersistentStorage() || !action) {
+        return;
+      }
+
+      var history = Engine.getActionHistory();
+      var lastAction = history.length > 0 ? history[history.length - 1].action : null;
+
+      if (lastAction === action) {
+        return;
+      }
+
+      try {
         history.push({
           action: action,
           date: new Date().toLocaleString()
         });
 
-        if (history.length > 10) {
+        while (history.length > Engine.ACTION_HISTORY_LIMIT) {
           history.shift();
         }
 
@@ -347,26 +422,20 @@
       }
     },
 
-    createRestartButton: function () {
-      if ($('#restartGameBtn').length > 0) {
+    registerStateChange: function (stateName) {
+      Engine._stateDirty = true;
+
+      if (!stateName) {
         return;
       }
 
-      $('<span>')
-        .attr('id', 'restartGameBtn')
-        .addClass('menuBtn')
-        .text(_('reiniciar jogo.'))
-        .click(function () {
-          if (confirm('Deseja realmente reiniciar o jogo?')) {
-            localStorage.removeItem('gameState');
-            localStorage.removeItem('actionHistory');
-            localStorage.removeItem('lastSaveTime');
-            window.location.reload();
-          }
-        })
-        .appendTo($('.menu'));
-
-      Engine.addActionHistory('Botão de reiniciar jogo criado.');
+      if (stateName.indexOf('stores.') === 0) {
+        Engine.addActionHistory('Recursos atualizados.');
+      } else if (stateName.indexOf('features.') === 0) {
+        Engine.addActionHistory('Nova funcionalidade liberada.');
+      } else if (stateName.indexOf('game.') === 0 || stateName.indexOf('config.') === 0) {
+        Engine.addActionHistory('Configuração do jogo atualizada.');
+      }
     },
 
     loadGame: function () {
@@ -468,7 +537,7 @@
     },
 
     export64: function () {
-      Engine.saveGame();
+      Engine.saveGame({ force: true, historyMessage: 'Jogo exportado manualmente.' });
       Engine.enableSelection();
       return Engine.generateExport64();
     },
@@ -884,7 +953,7 @@
     },
 
     handleStateUpdates: function (e) {
-
+      Engine.registerStateChange(e && e.stateName);
     },
 
     switchLanguage: function (dom) {
